@@ -477,6 +477,12 @@
                                 "type": "integer",
                                 "minimum": 0
                             },
+                            "format": {
+                                "description": "Type of the image of the disk",
+                                "type": "string",
+                                "pattern":  "^(bochs|cloop|cow|dmg|qcow|qcow2|qed|raw|vmdk|vpc)$",
+                                "error": "KCHTMPL0027E"
+                            },
                             "size": {
                                 "description": "Size (GB) of the disk",
                                 "type": "number",
@@ -488,8 +494,13 @@
                                 "type": "string",
                                 "pattern": "^/.+$",
                                 "error": "KCHTMPL0023E"
+                            },
+                            "pool": {
+                                "description": "Location (URI) of the storage pool",
+                                "type": "string",
+                                "pattern": "^/plugins/kimchi/storagepools/[^/]+/?$",
+                                "error": "KCHTMPL0015E"
                             }
-
                         }
                     },
                     "minItems": 1,
@@ -660,6 +671,12 @@
                                 "type": "string",
                                 "pattern":  "^(bochs|cloop|cow|dmg|qcow|qcow2|qed|raw|vmdk|vpc)$",
                                 "error": "KCHTMPL0027E"
+                            },
+                            "pool": {
+                                "description": "Location (URI) of the storage pool",
+                                "type": "string",
+                                "pattern": "^/plugins/kimchi/storagepools/[^/]+/?$",
+                                "error": "KCHTMPL0015E"
                             }
                         }
                     },

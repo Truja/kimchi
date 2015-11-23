@@ -158,6 +158,7 @@ def _get_tmpl_defaults():
     for disk in storage_section.keys():
         data = storage_section[disk]
         data['index'] = int(disk.split('.')[1])
+        data['pool'] = defaults['storagepool']
         defaults['disks'].append(data)
 
     # Parse processor section to get cpus and cpu_topology values
