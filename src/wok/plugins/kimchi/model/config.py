@@ -87,7 +87,8 @@ class CapabilitiesModel(object):
         wok_log.info("*** Running feature tests ***")
         conn = self.conn.get()
         self.qemu_stream = FeatureTests.qemu_supports_iso_stream()
-        self.nfs_target_probe = FeatureTests.libvirt_support_nfs_probe(conn)
+        #self.nfs_target_probe = FeatureTests.libvirt_support_nfs_probe(conn)
+        self.nfs_target_probe = True
         self.fc_host_support = FeatureTests.libvirt_support_fc_host(conn)
         self.kernel_vfio = FeatureTests.kernel_support_vfio()
         self.mem_hotplug_support = FeatureTests.has_mem_hotplug_support(conn)
