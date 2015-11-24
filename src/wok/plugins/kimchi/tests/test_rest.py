@@ -220,6 +220,8 @@ class RestTests(unittest.TestCase):
         vm = json.loads(
             self.request('/plugins/kimchi/vms/∨м-црdαtеd', req).read()
         )
+        # Memory was hot plugged
+        params['memory'] += 1024
         for key in params.keys():
             self.assertEquals(params[key], vm[key])
 
@@ -935,7 +937,8 @@ class RestTests(unittest.TestCase):
         )
         lun_name = json.loads(resp.read())[0]['name']
 
-        tmpl_params['disks'] = [{'index': 0, 'volume': lun_name}]
+        tmpl_params['disks'] = [{'index': 0, 'volume': lun_name,
+                                'pool': tmpl_params['storagepool']}]
         req = json.dumps(tmpl_params)
         resp = self.request('/plugins/kimchi/templates', req, 'POST')
         self.assertEquals(201, resp.status)

@@ -25,7 +25,6 @@ from functools import partial
 
 from tests.utils import get_free_port, patch_auth, request, run_server
 
-from wok.plugins.kimchi import osinfo
 from wok.plugins.kimchi.config import READONLY_POOL_TYPE
 from wok.plugins.kimchi.mockmodel import MockModel
 
@@ -36,6 +35,8 @@ host = None
 port = None
 ssl_port = None
 cherrypy_port = None
+
+DEFAULT_POOL = u'/plugins/kimchi/storagepools/default-pool'
 
 
 def setUpModule():
@@ -89,9 +90,11 @@ class TemplateTests(unittest.TestCase):
         )
         self.assertEquals(sorted(tmpl.keys()), sorted(keys))
 
-        # Verify if default disk format was configured
-        default_disk_format = osinfo.defaults['disks'][0]['format']
-        self.assertEquals(tmpl['disks'][0]['format'], default_disk_format)
+        disk_keys = ['index', 'pool', 'size', 'format']
+        disk_pool_keys = ['name', 'type']
+        self.assertEquals(sorted(tmpl['disks'][0].keys()), sorted(disk_keys))
+        self.assertEquals(sorted(tmpl['disks'][0]['pool'].keys()),
+                          sorted(disk_pool_keys))
 
         # Clone a template
         resp = self.request('/plugins/kimchi/templates/test/clone', '{}',
@@ -212,13 +215,20 @@ class TemplateTests(unittest.TestCase):
         self.assertEquals(update_tmpl['cdrom'], cdrom_data['cdrom'])
 
         # Update disks
-        disk_data = {'disks': [{'index': 0, 'size': 10, 'format': 'raw'},
-                               {'index': 1, 'size': 20, 'format': 'raw'}]}
+        disk_data = {'disks': [{'index': 0, 'size': 10, 'format': 'raw',
+                                'pool': DEFAULT_POOL},
+                               {'index': 1, 'size': 20, 'format': 'qcow2',
+                                'pool': DEFAULT_POOL}]}
         resp = self.request(new_tmpl_uri, json.dumps(disk_data), 'PUT')
         self.assertEquals(200, resp.status)
         resp = self.request(new_tmpl_uri)
         self.assertEquals(200, resp.status)
         updated_tmpl = json.loads(resp.read())
+        disk_data['disks'][0]['pool'] = {'name': DEFAULT_POOL,
+                                         'type': 'dir'}
+
+        disk_data['disks'][1]['pool'] = {'name': DEFAULT_POOL,
+                                         'type': 'dir'}
         self.assertEquals(updated_tmpl['disks'], disk_data['disks'])
 
         # For all supported types, edit the template and check if
@@ -227,13 +237,15 @@ class TemplateTests(unittest.TestCase):
                       'qed', 'raw', 'vmdk', 'vpc']
         for disk_type in disk_types:
             disk_data = {'disks': [{'index': 0, 'format': disk_type,
-                                    'size': 10}]}
+                                    'size': 10, 'pool': DEFAULT_POOL}]}
             resp = self.request(new_tmpl_uri, json.dumps(disk_data), 'PUT')
             self.assertEquals(200, resp.status)
 
             resp = self.request(new_tmpl_uri)
             self.assertEquals(200, resp.status)
             updated_tmpl = json.loads(resp.read())
+            disk_data['disks'][0]['pool'] = {u'name': DEFAULT_POOL,
+                                             u'type': u'dir'}
             self.assertEquals(updated_tmpl['disks'], disk_data['disks'])
 
         # Update folder
@@ -347,6 +359,24 @@ class TemplateTests(unittest.TestCase):
                 resp = self.request('/plugins/kimchi/templates/test', req,
                                     'PUT')
                 self.assertEquals(200, resp.status)
+
+        # Test disk template update with different pool
+        pool_uri = u'/plugins/kimchi/storagepools/kīмсhīUnitTestDirPool'
+        disk_data = {'disks': [{'size': 5, 'format': 'qcow2',
+                                'pool': pool_uri}]}
+        req = json.dumps(disk_data)
+        resp = self.request('/plugins/kimchi/templates/test', req, 'PUT')
+        self.assertEquals(200, resp.status)
+        del(disk_data['disks'][0]['pool'])
+        disk_data['disks'][0]['index'] = 0
+        disk_data['disks'][0]['pool'] = {u'name': pool_uri,
+                                         u'type': u'dir'}
+        tmpl = json.loads(
+            self.request('/plugins/kimchi/templates/test').read())
+        self.assertEquals(sorted(disk_data['disks'][0].keys()),
+                          sorted(tmpl['disks'][0].keys()))
+        self.assertEquals(sorted(disk_data['disks'][0].values()),
+                          sorted(tmpl['disks'][0].values()))
 
     def test_tmpl_integrity(self):
         # Create a network and a pool for testing template integrity

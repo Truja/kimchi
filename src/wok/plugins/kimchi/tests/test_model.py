@@ -76,6 +76,16 @@ def tearDownModule():
     shutil.rmtree(TMP_DIR)
 
 
+def _setDiskPoolDefault():
+    osinfo.defaults['disks'][0]['pool'] = \
+        '/plugins/kimchi/storagepools/default'
+
+
+def _setDiskPoolDefaultTest():
+    osinfo.defaults['disks'][0]['pool'] = \
+        '/plugins/kimchi/storagepools/default-pool'
+
+
 class ModelTests(unittest.TestCase):
     def setUp(self):
         self.tmp_store = '/tmp/kimchi-store-test'
@@ -1050,6 +1060,9 @@ class ModelTests(unittest.TestCase):
                 'domain': 'test',
                 'arch': 'i686'
             }
+
+            _setDiskPoolDefaultTest()
+            rollback.prependDefer(_setDiskPoolDefault)
 
             inst.templates_create(params)
             rollback.prependDefer(inst.template_delete, 'test')
