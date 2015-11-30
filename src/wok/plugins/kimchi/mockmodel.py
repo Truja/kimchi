@@ -54,12 +54,13 @@ from wok.plugins.kimchi.vmtemplate import VMTemplate
 
 fake_user = {'root': 'letmein!'}
 mockmodel_defaults = {
-    'storagepool': '/plugins/kimchi/storagepools/default-pool',
     'domain': 'test', 'arch': 'i686'
 }
 storagevolumes.VALID_RAW_CONTENT = ['dos/mbr boot sector',
                                     'x86 boot sector',
                                     'data', 'empty']
+
+DEFAULT_POOL = '/plugins/kimchi/storagepools/default-pool'
 
 
 class MockModel(Model):
@@ -74,7 +75,7 @@ class MockModel(Model):
         # test:///default driver
         defaults = dict(osinfo.defaults)
         defaults.update(mockmodel_defaults)
-        defaults['disks'][0]['pool'] = defaults['storagepool']
+        defaults['disks'][0]['pool'] = DEFAULT_POOL
         osinfo.defaults = dict(defaults)
 
         self._mock_vgs = MockVolumeGroups()

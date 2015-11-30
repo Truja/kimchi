@@ -76,17 +76,12 @@ class VMTemplate(object):
             graphics.update(graph_args)
             args['graphics'] = graphics
 
-        # Provide compatibility with old template version and sets data to
-        # correct output format if necessary
-        def _fix_disk_compatibilities(disks):
+        # Find pool type for each disk
+        def _find_pool_type(disks):
             for i, disk in enumerate(disks):
-                if 'pool' not in disk:
-                    disk['pool'] = {'name': self.info['storagepool']}
-                if (isinstance(disk['pool'], str) or
-                        isinstance(disk['pool'], unicode)):
-                    disk['pool'] = {'name': disk['pool']}
-                disk['pool']['type'] = \
-                    self._get_storage_type(disk['pool']['name'])
+                if 'type' not in disk['pool']:
+                    disk['pool']['type'] = \
+                        self._get_storage_type(disk['pool']['name'])
 
         if self.info.get('disks') is not None:
             _fix_disk_compatibilities(self.info['disks'])
@@ -459,10 +454,11 @@ class VMTemplate(object):
             invalid['networks'] = invalid_networks
 
         # validate storagepools integrity
-        pool_uri = self.info['storagepool']
-        pool_name = pool_name_from_uri(pool_uri)
-        if pool_name not in self._get_all_storagepools_name():
-            invalid['storagepools'] = [pool_name]
+        for disk in self.info['disks']:
+            pool_uri = disk['pool']['name']
+            pool_name = pool_name_from_uri(pool_uri)
+            if pool_name not in self._get_all_storagepools_name():
+                invalid['storagepools'] = [pool_name]
 
         # validate iso integrity
         # FIXME when we support multiples cdrom devices

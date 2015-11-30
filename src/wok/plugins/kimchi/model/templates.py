@@ -22,7 +22,7 @@ import libvirt
 import os
 import stat
 
-from wok.exception import InvalidOperation, InvalidParameter
+from wok.exception import InvalidOperation, InvalidParameter, MissingParameter
 from wok.exception import NotFoundError, OperationFailed
 from wok.utils import probe_file_permission_as_user, run_setfacl_set_attr
 from wok.xmlutils.utils import xpath_get_text
@@ -39,6 +39,27 @@ class TemplatesModel(object):
         self.objstore = kargs['objstore']
         self.conn = kargs['conn']
 
+    def _check_disks_params(self, params):
+        if 'disks' in params:
+            conn = self.conn.get()
+            for disk in params['disks']:
+                if (('size' not in disk or 'volume' not in disk) or
+                    ('format' not in disk) or ('pool' not in disk) or
+                    ('name' not in disk['pool'])):
+                    raise MissingParameter('KCHTMPL0028E')
+
+                pool_uri = disk['pool'].get('name')
+                if pool_uri:
+                    try:
+                        pool_name = pool_name_from_uri(pool_uri)
+                        pool = conn.storagePoolLookupByName(
+                            pool_name.encode("utf-8"))
+                    except Exception:
+                        raise InvalidParameter("KCHTMPL0004E", {
+                            'pool': pool_uri, 'template': name})
+                    if 'volume' in disk:
+                        self.template_volume_validate(disk['volume'], pool)
+
     def create(self, params):
         name = params.get('name', '').strip()
         iso = params.get('cdrom')
@@ -53,6 +74,9 @@ class TemplatesModel(object):
                     raise InvalidParameter('KCHISO0008E',
                                            {'filename': iso, 'user': user,
                                             'err': excp})
+
+        # Check disks information
+        self._check_disks_params(params)
 
         cpu_info = params.get('cpu_info')
         if cpu_info:
@@ -69,20 +93,6 @@ class TemplatesModel(object):
                 # exception if a topology is invalid.
                 CPUInfoModel(conn=self.conn).\
                     check_topology(params['cpus'], topology)
-
-        conn = self.conn.get()
-        pool_uri = params.get(u'storagepool', '')
-        if pool_uri:
-            try:
-                pool_name = pool_name_from_uri(pool_uri)
-                pool = conn.storagePoolLookupByName(pool_name.encode("utf-8"))
-            except Exception:
-                raise InvalidParameter("KCHTMPL0004E", {'pool': pool_uri,
-                                                        'template': name})
-
-            tmp_volumes = [disk['volume'] for disk in params.get('disks', [])
-                           if 'volume' in disk]
-            self.template_volume_validate(tmp_volumes, pool)
 
         for net_name in params.get(u'networks', []):
             try:
@@ -112,27 +122,22 @@ class TemplatesModel(object):
         with self.objstore as session:
             return session.get_list('template')
 
-    def template_volume_validate(self, tmp_volumes, pool):
+    def template_volume_validate(self, volume, pool):
         kwargs = {'conn': self.conn, 'objstore': self.objstore}
         pool_type = xpath_get_text(pool.XMLDesc(0), "/pool/@type")[0]
         pool_name = unicode(pool.name(), 'utf-8')
 
-        # as we discussion, we do not mix disks from 2 different types of
-        # storage pools, for instance: we do not create a template with 2
-        # disks, where one comes from a SCSI pool and other is a .img in
-        # a DIR pool.
         if pool_type in ['iscsi', 'scsi']:
-            if not tmp_volumes:
+            if not volume:
                 raise InvalidParameter("KCHTMPL0018E")
 
             storagevolumes = __import__(
                 "wok.plugins.kimchi.model.storagevolumes", fromlist=[''])
             pool_volumes = storagevolumes.StorageVolumesModel(
                 **kwargs).get_list(pool_name)
-            vols = set(tmp_volumes) - set(pool_volumes)
-            if vols:
+            if volume not in pool_volumes:
                 raise InvalidParameter("KCHTMPL0019E", {'pool': pool_name,
-                                                        'volume': vols})
+                                                        'volume': volume})
 
 
 class TemplateModel(object):
@@ -147,16 +152,8 @@ class TemplateModel(object):
             params = session.get('template', name)
         if overrides:
             params.update(overrides)
-            if 'storagepool' in params:
-                libvVMT = LibvirtVMTemplate(params, conn=conn)
-                poolType = libvVMT._get_storage_type(params['storagepool'])
-                for i, disk in enumerate(params['disks']):
-                    if disk['pool']['type'] != poolType:
-                        raise InvalidOperation('KCHVM0072E')
-                    else:
-                        params['disks'][i]['pool']['name'] = \
-                            params['storagepool']
 
+        self.templates._check_disks_params(params)
         return LibvirtVMTemplate(params, False, conn)
 
     def lookup(self, name):
@@ -193,24 +190,11 @@ class TemplateModel(object):
         new_t = copy.copy(old_t)
         new_t.update(params)
 
+        # Check disks information
+        self.templates._check_disks_params(new_t)
+
         if not self._validate_updated_cpu_params(new_t):
             raise InvalidParameter('KCHTMPL0025E')
-
-        ident = name
-
-        conn = self.conn.get()
-        pool_uri = new_t.get(u'storagepool', '')
-
-        if pool_uri:
-            try:
-                pool_name = pool_name_from_uri(pool_uri)
-                pool = conn.storagePoolLookupByName(pool_name.encode("utf-8"))
-            except Exception:
-                raise InvalidParameter("KCHTMPL0004E", {'pool': pool_uri,
-                                                        'template': name})
-            tmp_volumes = [disk['volume'] for disk in new_t.get('disks', [])
-                           if 'volume' in disk]
-            self.templates.template_volume_validate(tmp_volumes, pool)
 
         for net_name in params.get(u'networks', []):
             try:
