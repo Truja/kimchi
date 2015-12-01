@@ -36,11 +36,11 @@ from wok.plugins.kimchi.vmtemplate import VMTemplate
 
 def _check_disks_params(params, conn, objstore):
     if 'disks' not in params:
-            return
+        return
 
-    basic_disk = ['index', 'format', 'pool', 'size']
-    ro_disk = ['index', 'format', 'pool', 'volume']
-    base_disk = ['index', 'base', 'pool']
+    basic_disk = ['format', 'pool', 'size']
+    ro_disk = ['format', 'pool', 'volume']
+    base_disk = ['base', 'pool', 'size', 'format']
     for disk in params['disks']:
         keys = sorted(disk.keys())
         if ((keys == sorted(basic_disk)) or (keys == sorted(ro_disk)) or
@@ -164,15 +164,9 @@ class TemplateModel(object):
         self.templates = TemplatesModel(**kargs)
 
     @staticmethod
-    def get_template(name, objstore, conn, overrides=None):
+    def get_template(name, objstore, conn, overrides={}):
         with objstore as session:
             params = session.get('template', name)
-        if overrides:
-            if 'storagepool' in overrides:
-                for i, disk in enumerate(params['disks']):
-                    params['disks'][i]['pool']['name'] = \
-                        overrides['storagepool']
-                del overrides['storagepool']
             params.update(overrides)
 
         _check_disks_params(params, conn, objstore)
@@ -251,9 +245,7 @@ class LibvirtVMTemplate(VMTemplate):
         self.conn = conn
         VMTemplate.__init__(self, args, scan)
 
-    def _storage_validate(self, pool_uri=None):
-        if pool_uri is None:
-            pool_uri = self.info['storagepool']
+    def _storage_validate(self, pool_uri):
         pool_name = pool_name_from_uri(pool_uri)
         try:
             conn = self.conn.get()
@@ -314,7 +306,7 @@ class LibvirtVMTemplate(VMTemplate):
         vol_list = self.to_volume_list(vm_uuid)
         try:
             for v in vol_list:
-                pool = self._storage_validate(v['pool'])
+                pool = self._storage_validate(v['pool']['name'])
                 # outgoing text to libvirt, encode('utf-8')
                 pool.createXML(v['xml'].encode('utf-8'), 0)
         except libvirt.libvirtError as e:

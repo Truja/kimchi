@@ -264,24 +264,20 @@ class ModelTests(unittest.TestCase):
             self.assertEquals('finished', inst.task_lookup(task_id)['status'])
             vol_path = inst.storagevolume_lookup('default', vol)['path']
 
-            # Hack the model objstore to add a new template
-            # It is needed as the image file must be a bootable image when
-            # using model
-            # As it is difficult to create one on test runtime, inject a
-            # template with an empty image file to the objstore to test the
-            # feature
+            # Create template based on IMG file
             tmpl_name = "img-tmpl"
-            tmpl_info = {"cpus": 1, "cdrom": "",
+            pool_uri = "/plugins/kimchi/storagepools/default"
+            tmpl_info = {"cpus": 1, "cdrom": "", "name": tmpl_name,
                          "graphics": {"type": "vnc", "listen": "127.0.0.1"},
                          "networks": ["default"], "memory": 1024, "folder": [],
                          "icon": "images/icon-vm.png",
                          "os_distro": "unknown", "os_version": "unknown",
-                         "disks": [{"base": vol_path, "size": 10, "pool": {
-                             "name": "/plugins/kimchi/storagepools/default"}}]}
+                         "disks": [{"base": vol_path, "size": 10,
+                                    "format": "qcow2",
+                                    "pool": {"name": pool_uri}}]}
 
-            with inst.objstore as session:
-                session.store('template', tmpl_name, tmpl_info,
-                              get_kimchi_version())
+            inst.templates_create(tmpl_info)
+            rollback.prependDefer(inst.template_delete, tmpl_name)
 
             params = {'name': 'kimchi-vm',
                       'template': '/plugins/kimchi/templates/img-tmpl'}

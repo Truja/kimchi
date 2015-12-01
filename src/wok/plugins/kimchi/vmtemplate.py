@@ -81,17 +81,18 @@ class VMTemplate(object):
 
         # Find pool type for each disk
         disks = self.info.get('disks')
-        for disk in disks:
+        for index, disk in enumerate(disks):
             pool_name = disk.get('pool', {}).get('name')
             if pool_name is None:
                 raise MissingParameter('KCHTMPL0029E')
 
             pool_type = self._get_storage_type(disk['pool']['name'])
             disk['pool']['type'] = pool_type
+            disk['pool']['index'] = index
 
             if pool_type in ['logical', 'iscsi', 'scsi']:
                 if disk['format'] != 'raw':
-                    raise InvalidParameter('KCHTMPL0029E')
+                        raise InvalidParameter('KCHTMPL0029E')
 
     def _get_os_info(self, args, scan):
         distro = version = 'unknown'
@@ -406,7 +407,9 @@ class VMTemplate(object):
         return xml
 
     def validate(self):
-        self._storage_validate()
+        for disk in self.info.get('disks'):
+            pool_uri = disk.get('pool', {}).get('name')
+            self._storage_validate(pool_uri)
         self._network_validate()
         self._iso_validate()
 
