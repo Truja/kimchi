@@ -173,6 +173,7 @@ def upgrade_objectstore_data(item, old_uri, new_uri):
             conn.close()
         wok_log.info("%d '%s' entries upgraded in objectstore.", total, item)
 
+
 def upgrade_objectstore_template_disks(libv_conn):
     """
         Upgrade the value of a given JSON's item of all Templates.

@@ -26,9 +26,9 @@ from wok.xmlutils.utils import xpath_get_text
 from wok.plugins.kimchi.osinfo import get_template_default
 from wok.plugins.kimchi.vmtemplate import VMTemplate
 
-DISKS = [{'size':10, 'format': 'raw', 'index': 0, 'pool': {'name':
-          '/plugins/kimchi/storagepools/default-pool'}},
-          {'size':5, 'format': 'qcow2', 'index': 1, 'pool': {'name':
+DISKS = [{'size': 10, 'format': 'raw', 'index': 0,
+          'pool': {'name': '/plugins/kimchi/storagepools/default-pool'}},
+         {'size': 5, 'format': 'qcow2', 'index': 1, 'pool': {'name':
           '/plugins/kimchi/storagepools/default-pool'}}]
 
 
