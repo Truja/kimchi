@@ -76,23 +76,39 @@ class VMTemplate(object):
             graphics.update(graph_args)
             args['graphics'] = graphics
 
+        default_disk = self.info['disks'][0]
+
         # Override template values according to 'args'
         self.info.update(args)
 
         # Find pool type for each disk
         disks = self.info.get('disks')
+
+        basic_disk = ['index', 'format', 'pool', 'size']
+        ro_disk = ['index', 'format', 'pool', 'volume']
+        base_disk = ['index', 'base', 'pool', 'size', 'format']
+
         for index, disk in enumerate(disks):
-            pool_name = disk.get('pool', {}).get('name')
+            disk_info = dict(default_disk)
+            disk_info.update(disk)
+
+            pool_name = disk_info.get('pool', {}).get('name')
             if pool_name is None:
                 raise MissingParameter('KCHTMPL0029E')
 
-            pool_type = self._get_storage_type(disk['pool']['name'])
-            disk['pool']['type'] = pool_type
-            disk['pool']['index'] = index
+            keys = sorted(disk_info.keys())
+            if ((keys != sorted(basic_disk)) and (keys != sorted(ro_disk)) and
+                    (keys != sorted(base_disk))):
+                raise MissingParameter('KCHTMPL0028E')
 
+            pool_type = self._get_storage_type(disk_info['pool']['name'])
             if pool_type in ['logical', 'iscsi', 'scsi']:
-                if disk['format'] != 'raw':
-                        raise InvalidParameter('KCHTMPL0029E')
+                if disk_info['format'] != 'raw':
+                    raise InvalidParameter('KCHTMPL0029E')
+
+            disk_info['pool']['type'] = pool_type
+            disk_info['pool']['index'] = disk_info.get('index', index)
+            self.info['disks'][index] = disk_info
 
     def _get_os_info(self, args, scan):
         distro = version = 'unknown'

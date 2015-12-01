@@ -22,7 +22,7 @@ import libvirt
 import os
 import stat
 
-from wok.exception import InvalidOperation, InvalidParameter, MissingParameter
+from wok.exception import InvalidOperation, InvalidParameter
 from wok.exception import NotFoundError, OperationFailed
 from wok.utils import probe_file_permission_as_user, run_setfacl_set_attr
 from wok.xmlutils.utils import xpath_get_text
@@ -32,43 +32,6 @@ from wok.plugins.kimchi.kvmusertests import UserTests
 from wok.plugins.kimchi.model.cpuinfo import CPUInfoModel
 from wok.plugins.kimchi.utils import pool_name_from_uri
 from wok.plugins.kimchi.vmtemplate import VMTemplate
-
-
-def _check_disks_params(params, conn, objstore):
-    if 'disks' not in params:
-        return
-
-    basic_disk = ['format', 'pool', 'size']
-    ro_disk = ['format', 'pool', 'volume']
-    base_disk = ['base', 'pool', 'size', 'format']
-    for disk in params['disks']:
-        keys = sorted(disk.keys())
-        if ((keys == sorted(basic_disk)) or (keys == sorted(ro_disk)) or
-                (keys == sorted(base_disk))):
-            pass
-        else:
-            raise MissingParameter('KCHTMPL0028E')
-
-        if disk.get('pool', {}).get('name') is None:
-            raise MissingParameter('KCHTMPL0028E')
-
-        pool_uri = disk['pool']['name']
-        try:
-            pool_name = pool_name_from_uri(pool_uri)
-            conn.get().storagePoolLookupByName(pool_name.encode("utf-8"))
-        except Exception:
-            raise InvalidParameter("KCHTMPL0004E",
-                                   {'pool': pool_uri,
-                                    'template': pool_name})
-        if 'volume' in disk:
-            kwargs = {'conn': conn, 'objstore': objstore}
-            storagevolumes = __import__(
-                "wok.plugins.kimchi.model.storagevolumes", fromlist=[''])
-            pool_volumes = storagevolumes.StorageVolumesModel(
-                **kwargs).get_list(pool_name)
-            if disk['volume'] not in pool_volumes:
-                raise InvalidParameter("KCHTMPL0019E", {'pool': pool_name,
-                                       'volume': disk['volume']})
 
 
 class TemplatesModel(object):
@@ -90,9 +53,6 @@ class TemplatesModel(object):
                     raise InvalidParameter('KCHISO0008E',
                                            {'filename': iso, 'user': user,
                                             'err': excp})
-
-        # Check disks information
-        _check_disks_params(params, self.conn, self.objstore)
 
         cpu_info = params.get('cpu_info')
         if cpu_info:
@@ -121,6 +81,14 @@ class TemplatesModel(object):
         # Checkings will be done while creating this class, so any exception
         # will be raised here
         t = LibvirtVMTemplate(params, scan=True, conn=self.conn)
+
+        # Validate volumes
+        for disk in t.info.get('disks'):
+            volume = disk.get('volume')
+            if volume is not None:
+                self.template_volume_validate(volume, disk['pool'])
+
+        # Store template on objectstore
         name = params['name']
         try:
             with self.objstore as session:
@@ -141,10 +109,9 @@ class TemplatesModel(object):
 
     def template_volume_validate(self, volume, pool):
         kwargs = {'conn': self.conn, 'objstore': self.objstore}
-        pool_type = xpath_get_text(pool.XMLDesc(0), "/pool/@type")[0]
-        pool_name = unicode(pool.name(), 'utf-8')
+        pool_name = pool_name_from_uri(pool['name'])
 
-        if pool_type in ['iscsi', 'scsi']:
+        if pool['type'] in ['iscsi', 'scsi']:
             if not volume:
                 raise InvalidParameter("KCHTMPL0018E")
 
@@ -169,7 +136,6 @@ class TemplateModel(object):
             params = session.get('template', name)
             params.update(overrides)
 
-        _check_disks_params(params, conn, objstore)
         return LibvirtVMTemplate(params, False, conn)
 
     def lookup(self, name):
@@ -205,9 +171,6 @@ class TemplateModel(object):
         old_t = self.lookup(name)
         new_t = copy.copy(old_t)
         new_t.update(params)
-
-        # Check disks information
-        _check_disks_params(new_t, self.conn, self.objstore)
 
         if not self._validate_updated_cpu_params(new_t):
             raise InvalidParameter('KCHTMPL0025E')
@@ -306,7 +269,7 @@ class LibvirtVMTemplate(VMTemplate):
         vol_list = self.to_volume_list(vm_uuid)
         try:
             for v in vol_list:
-                pool = self._storage_validate(v['pool']['name'])
+                pool = self._storage_validate(v['pool'])
                 # outgoing text to libvirt, encode('utf-8')
                 pool.createXML(v['xml'].encode('utf-8'), 0)
         except libvirt.libvirtError as e:
