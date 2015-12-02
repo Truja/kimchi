@@ -48,8 +48,9 @@ ssl_port = None
 cherrypy_port = None
 fake_iso = '/tmp/fake.iso'
 
-DISKS = [{'size':10, 'format': 'qcow2', 'index': 0, 'pool': {'name':
-    '/plugins/kimchi/storagepools/default-pool'}}]
+DISKS = [{'size': 10, 'format': 'qcow2', 'index': 0, 'pool': {
+    'name': '/plugins/kimchi/storagepools/default-pool'}}]
+
 
 def setUpModule():
     global test_server, model, host, port, ssl_port, cherrypy_port
@@ -946,8 +947,8 @@ class RestTests(unittest.TestCase):
         )
         lun_name = json.loads(resp.read())[0]['name']
         pool_name = tmpl_params['disks'][0]['pool']['name']
-        tmpl_params['disks'] = [{'index': 0, 'volume': lun_name,
-            'pool': {'name': pool_name}, 'format': 'raw'}]
+        tmpl_params['disks'] = [{'index': 0, 'volume': lun_name, 'pool': {
+            'name': pool_name}, 'format': 'raw'}]
         req = json.dumps(tmpl_params)
         resp = self.request('/plugins/kimchi/templates', req, 'POST')
         self.assertEquals(201, resp.status)

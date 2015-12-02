@@ -110,7 +110,6 @@ class VMTemplate(object):
             disk_info['index'] = disk_info.get('index', index)
             self.info['disks'][index] = disk_info
 
-
     def _get_os_info(self, args, scan):
         distro = version = 'unknown'
 

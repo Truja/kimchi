@@ -120,18 +120,18 @@ class TemplateTests(unittest.TestCase):
 
         # Create an image based template
         open('/tmp/mock.img', 'w').close()
-        t = {'name': 'test_img_template',
-                'disks': [{'base': '/tmp/mock.img', 'format': 'qcow2',
-                    'pool': {'name': DEFAULT_POOL}, 'size': 1}]}
+        t = {'name': 'test_img_template', 'disks': [{
+            'base': '/tmp/mock.img', 'format': 'qcow2',
+            'pool': {'name': DEFAULT_POOL}, 'size': 1}]}
         req = json.dumps(t)
         resp = self.request('/plugins/kimchi/templates', req, 'POST')
         self.assertEquals(201, resp.status)
         os.remove('/tmp/mock.img')
 
         # Test disk format
-        t = {'name': 'test-format', 'cdrom': '/tmp/mock.iso',
-             'disks': [{'index': 0, 'size': 10, 'format': 'vmdk',
-                 'pool': {'name': DEFAULT_POOL}}]}
+        t = {'name': 'test-format', 'cdrom': '/tmp/mock.iso', 'disks': [{
+             'index': 0, 'size': 10, 'format': 'vmdk', 'pool': {
+                 'name': DEFAULT_POOL}}]}
         req = json.dumps(t)
         resp = self.request('/plugins/kimchi/templates', req, 'POST')
         self.assertEquals(201, resp.status)
@@ -216,10 +216,11 @@ class TemplateTests(unittest.TestCase):
         self.assertEquals(update_tmpl['cdrom'], cdrom_data['cdrom'])
 
         # Update disks
-        disk_data = {'disks': [{'index': 0, 'size': 10, 'format': 'raw',
-            'pool': {'name': DEFAULT_POOL}},
-             {'index': 1, 'size': 20, 'format': 'qcow2',
-                                   'pool': {'name': DEFAULT_POOL}}]}
+        disk_data = {'disks': [{'index': 0, 'size': 10,
+                                'format': 'raw', 'pool': {
+                                    'name': DEFAULT_POOL}},
+                               {'index': 1, 'size': 20, 'format': 'qcow2',
+                                'pool': {'name': DEFAULT_POOL}}]}
         resp = self.request(new_tmpl_uri, json.dumps(disk_data), 'PUT')
         self.assertEquals(200, resp.status)
         resp = self.request(new_tmpl_uri)
@@ -238,7 +239,7 @@ class TemplateTests(unittest.TestCase):
                       'qed', 'raw', 'vmdk', 'vpc']
         for disk_type in disk_types:
             disk_data = {'disks': [{'index': 0, 'format': disk_type,
-                'size': 10, 'pool': {'name': DEFAULT_POOL}}]}
+                         'size': 10, 'pool': {'name': DEFAULT_POOL}}]}
             resp = self.request(new_tmpl_uri, json.dumps(disk_data), 'PUT')
             self.assertEquals(200, resp.status)
 
@@ -356,10 +357,10 @@ class TemplateTests(unittest.TestCase):
                                                  'format': 'raw'}]})
             elif pool['type'] == 'logical':
                 req = json.dumps({'disks': [{'pool': {'name': pool_uri},
-                    'format': 'raw', 'size': 10}]})
+                                             'format': 'raw', 'size': 10}]})
             else:
                 req = json.dumps({'disks': [{'pool': {'name': pool_uri},
-                    'format': 'qcow2', 'size': 10}]})
+                                             'format': 'qcow2', 'size': 10}]})
 
             if req is not None:
                 resp = self.request('/plugins/kimchi/templates/test', req,

@@ -173,6 +173,7 @@ def upgrade_objectstore_data(item, old_uri, new_uri):
             conn.close()
         wok_log.info("%d '%s' entries upgraded in objectstore.", total, item)
 
+
 def upgrade_objectstore_template_disks(libv_conn):
     """
         Upgrade the value of a given JSON's item of all Templates.
@@ -192,7 +193,7 @@ def upgrade_objectstore_template_disks(libv_conn):
             pool_uri = template['storagepool']
             pool_name = pool_name_from_uri(pool_uri)
             pool = libv_conn.get().storagePoolLookupByName(
-                   pool_name.encode("utf-8"))
+                pool_name.encode("utf-8"))
             pool_type = xpath_get_text(pool.XMLDesc(0), "/pool/@type")[0]
 
             # Update json

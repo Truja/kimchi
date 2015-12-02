@@ -39,7 +39,6 @@ from wok.xmlutils.utils import xpath_get_text
 
 from wok.plugins.kimchi import netinfo
 from wok.plugins.kimchi import osinfo
-from wok.plugins.kimchi.config import get_kimchi_version
 from wok.plugins.kimchi.config import kimchiPaths as paths
 from wok.plugins.kimchi.model import model
 from wok.plugins.kimchi.model.libvirtconnection import LibvirtConnection
@@ -77,13 +76,13 @@ def tearDownModule():
 
 
 def _setDiskPoolDefault():
-    osinfo.defaults['disks'][0]['pool'] = {'name':
-        '/plugins/kimchi/storagepools/default'}
+    osinfo.defaults['disks'][0]['pool'] = {
+        'name': '/plugins/kimchi/storagepools/default'}
 
 
 def _setDiskPoolDefaultTest():
-    osinfo.defaults['disks'][0]['pool'] = {'name':
-        '/plugins/kimchi/storagepools/default-pool'}
+    osinfo.defaults['disks'][0]['pool'] = {
+        'name': '/plugins/kimchi/storagepools/default-pool'}
 
 
 class ModelTests(unittest.TestCase):
@@ -138,9 +137,9 @@ class ModelTests(unittest.TestCase):
             vol = inst.storagevolume_lookup(u'default', vol_params['name'])
 
             params = {'name': 'test', 'disks': [{'base': vol['path'],
-                'size': 1, 'pool': {
+                                                 'size': 1, 'pool': {
                 'name': '/plugins/kimchi/storagepools/default'}}],
-                      'cdrom': UBUNTU_ISO}
+                'cdrom': UBUNTU_ISO}
             inst.templates_create(params)
             rollback.prependDefer(inst.template_delete, 'test')
 
@@ -605,7 +604,7 @@ class ModelTests(unittest.TestCase):
         with RollbackContext() as rollback:
             params = {'name': 'test', 'disks': [{'size': 1, 'pool': {
                 'name': '/plugins/kimchi/storagepools/default'}}],
-                      'cdrom': UBUNTU_ISO}
+                'cdrom': UBUNTU_ISO}
             inst.templates_create(params)
             rollback.prependDefer(inst.template_delete, 'test')
 
@@ -664,7 +663,7 @@ class ModelTests(unittest.TestCase):
 
             params = {'name': 'test', 'disks': [{'size': 1, 'pool': {
                 'name': '/plugins/kimchi/storagepools/default'}}],
-                      'cdrom': UBUNTU_ISO}
+                'cdrom': UBUNTU_ISO}
             inst.templates_create(params)
             rollback.prependDefer(inst.template_delete, 'test')
 
@@ -689,10 +688,10 @@ class ModelTests(unittest.TestCase):
             self._create_template_conf_with_disk_format(default_vol)
             rollback.prependDefer(self._restore_template_conf_file)
 
-            params = {'name': 'test',
-                      'disks': [{'size': 1, 'format': user_vol,
-                    'pool': {'name': '/plugins/kimchi/storagepools/default'}}],
-                      'cdrom': UBUNTU_ISO}
+            params = {'name': 'test', 'disks': [{
+                'size': 1, 'format': user_vol,
+                'pool': {'name': '/plugins/kimchi/storagepools/default'}}],
+                'cdrom': UBUNTU_ISO}
             inst.templates_create(params)
             rollback.prependDefer(inst.template_delete, 'test')
 
@@ -715,10 +714,9 @@ class ModelTests(unittest.TestCase):
             self._create_template_conf_with_disk_format(None)
             rollback.prependDefer(self._restore_template_conf_file)
 
-            params = {'name': 'test',
-                    'disks': [{'size': 1, 'pool': {
-                        'name': '/plugins/kimchi/storagepools/default'}}],
-                    'cdrom': UBUNTU_ISO}
+            params = {'name': 'test', 'disks': [{'size': 1, 'pool': {
+                'name': '/plugins/kimchi/storagepools/default'}}],
+                'cdrom': UBUNTU_ISO}
             inst.templates_create(params)
             rollback.prependDefer(inst.template_delete, 'test')
 
