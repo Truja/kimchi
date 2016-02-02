@@ -670,8 +670,15 @@ kimchi.guest_edit_main = function() {
             wok.window.open('plugins/kimchi/guest-storage-add.html', 'extendCreateStorage');
         });
         if ((kimchi.thisVMState === "running") || (kimchi.thisVMState === "paused")) {
-            $("#form-guest-edit-general input").not("#guest-edit-memory-textbox").prop("disabled", true);
+            $("#form-guest-edit-general input").not("#guest-edit-memory-textbox, #guest-edit-max-memory-textbox").prop("disabled", true);
         }
+
+        $('#guest-show-max-memory').on('click', function(e) {
+            e.preventDefault;
+            $('#guest-max-memory-panel').slideToggle();
+            var text = $('#guest-show-max-memory span.text').text();
+            $('#guest-show-max-memory span.text').text(text == i18n['KCHVMED6008M'] ? i18n['KCHVMED6009M'] : i18n['KCHVMED6008M']);
+        });
 
         var onAttached = function(params) {
             refreshCDROMs();
