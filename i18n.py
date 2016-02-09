@@ -132,6 +132,7 @@ messages = {
     "KCHVM0074E": _("Unable to update the following parameters while the VM is online: %(params)s"),
     "KCHVM0075E": _("Maximum memory requested is higher than amount supported by host: %(memHost)sMiB."),
     "KCHVM0076E": _("Maximum memory requested is higher than maximum amount recommended: 1TiB"),
+    "KCHVM0077E": _("Cannot update maximum memory when guest is running."),
 
     "KCHVMHDEV0001E": _("VM %(vmid)s does not contain directly assigned host device %(dev_name)s."),
     "KCHVMHDEV0002E": _("The host device %(dev_name)s is not allowed to directly assign to VM."),

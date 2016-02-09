@@ -310,10 +310,24 @@
                 },
                 "cpu_info": { "$ref": "#/kimchitype/cpu_info" },
                 "memory": {
-                    "description": "The new amount (MB) of memory for the VM",
-                    "type": "integer",
-                    "minimum": 512,
-                    "error": "KCHTMPL0013E"
+                    "description": "New guest memory and maximum memory values",
+                    "type": "object",
+                    "properties": {
+                        "current": {
+                            "description": "The new amount (MB) of current memory for the VM",
+                            "type": "integer",
+                            "minimum": 512,
+                            "error": "KCHTMPL0013E"
+                        },
+                        "maxmemory": {
+                            "description": "Maximum amount (MB) of memory that a VM can reach when memory devices are live attached (memory hotplug)",
+                            "type": "integer",
+                            "minimum": 512,
+                            "error": "KCHTMPL0013E"
+                        }
+                    },
+		    "additionalProperties": false,
+                    "error": "KCHTMPL0030E"
                 }
             },
             "additionalProperties": false
