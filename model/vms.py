@@ -977,7 +977,7 @@ class VMModel(object):
             raise OperationFailed('KCHVM0042E', {'name': dom.name()})
 
         # Memory live update must be done in chunks of 1024 Mib or 1Gib
-        new_mem = params['memory']
+        new_mem = params['memory']['current']
         old_mem = int(xpath_get_text(xml, XPATH_DOMAIN_MEMORY)[0]) >> 10
         if new_mem < old_mem:
             raise OperationFailed('KCHVM0043E')
@@ -1204,7 +1204,7 @@ class VMModel(object):
         # Get max memory
         maxmemory = xpath_get_text(xml, XPATH_MAX_MEMORY)
         if len(maxmemory) > 0:
-            maxmemory = convert_data_size(maxmemory[0], unit, 'MiB')
+            maxmemory = convert_data_size(maxmemory[0], 'KiB', 'MiB')
         else:
             maxmemory = 0
 
